@@ -115,29 +115,35 @@ class RedBlackTree(object):
 
   def traverse(self):
     if self.root:
-      self.traverseInOrder(self.root)
+      return self.traverseInOrder(self.root)
+    return []
   ###
-  def traverseInOrder(self, node):
+  def traverseInOrder(self, node, array = []):
     if node.leftChild:
-      self.traverseInOrder(node.leftChild)
+      array = self.traverseInOrder(node.leftChild, array)
 
     print(' => %d %s' % (node.data, node.color))
+    array.append([node.data, node.color]) # для проверки
 
     if node.rightChild:
-      self.traverseInOrder(node.rightChild)
+      array = self.traverseInOrder(node.rightChild, array)
+
+    return array
 
 
-rb = RedBlackTree()
-rb.insert(5)
-rb.insert(3)
-rb.insert(6)
-rb.insert(4)
-#       5
-#    /    \
-#   3      6
-#    \
-#     4
-rb.traverse()
+# rb = RedBlackTree()
+# rb.insert(5)
+# rb.insert(3)
+# rb.insert(6)
+# rb.insert(4)
+# #       5
+# #    /    \
+# #   3      6
+# #    \
+# #     4
+# print(rb.traverse())
+# case1 = [[3, 'black'], [4, 'red'], [5, 'red'], [6, 'black']]
+# assertEqual(rb.traverse(), case1)
 
 # import sys
 # sys.stdout.write('.')
