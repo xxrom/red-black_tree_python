@@ -3,11 +3,8 @@ RED = 'red'
 BLACK = 'black'
 
 class Node(object):
-  def __init__(self, data, parent = None):
-    if parent:
-      self.color = RED
-    else:
-      self.color = BLACK
+  def __init__(self, data, parent = None, color = RED):
+    self.color = color
     self.data = data
     self.leftChild = None
     self.rightChild = None
@@ -31,25 +28,28 @@ class RedBlackTree(object):
   def __init__(self):
     self.root = None
 
-  def insert(self, data):
-    self.root = self.insertNode(data, self.root, None)
+  def insert(self, data, color = RED):
+    self.root = self.insertNode(data, self.root, None, color)
 
-  def insertNode(self, data, node, parent):
+  def insertNode(self, data, node, parent, color):
     if not node: # если подДерево пустое, то Вернем новую ноду
-      print(' * new noda %d ' % data)
+      # print(' * new node %d %s' % (data, color))
       print('')
-      return Node(data, parent)
+      if parent:
+        return Node(data, parent, color)
+      else:
+        return Node(data, parent, BLACK) # корень дерева BLACK
 
     if node.data < data: # идем в правое подДерево
-      print(' >>> ')
-      node.rightChild = self.insertNode(data, node.rightChild, node)
+      # print(' >>> ')
+      node.rightChild = self.insertNode(data, node.rightChild, node, color)
 
       self.validateTree(node.rightChild)
       return node
 
     elif node.data > data: # идем в левое подДерево
-      print(' <<< ')
-      node.leftChild = self.insertNode(data, node.leftChild, node)
+      # print(' <<< ')
+      node.leftChild = self.insertNode(data, node.leftChild, node, color)
       self.validateTree(node.leftChild)
       return node
 
@@ -61,6 +61,17 @@ class RedBlackTree(object):
 
     # case 1 левый правый
     if node.color == RED and node.parent:
+      #      B
+      #    /   \
+      #   R     R
+      #    \
+      #     xR
+      # recolor grendPa and his childs =>
+      #     xR
+      #    /   \
+      #   B     B
+      #    \
+      #     R
       parent = node.parent
       if parent.color == RED and parent.parent and node.parent.parent:
         print(' %d parent => %d => grandPa => %d ' % (node.data, node.parent.data, node.parent.parent.data))
@@ -75,55 +86,88 @@ class RedBlackTree(object):
             grandPa.changeColor()
             grandPaLeftChild.changeColor()
             grandPaRightChild.changeColor()
-            self.validateTree(grandPa) # запускаем валидацию от дедушки
+            return self.validateTree(grandPa) # запускаем валидацию от дедушки
 
     # case 2
     if node.color == RED and node.parent:
+      #      5B
+      #    /    \
+      #   3R     6B
+      #    \
+      #     x4R
+      # rotateLeft 3R =>
+      #        5B
+      #       /   \
+      #      x4R   6B
+      #     /
+      #    3R
       parent = node.parent
-      if parent.color == RED and parent.parent and node.parent.parent:
-        print(' %d parent => %d => grandPa => %d ' % (node.data, node.parent.data, node.parent.parent.data))
-        grandPa = parent.parent
-        if grandPa.color == BLACK:
-          print('in grandPa')
-          grandPaRightChild = grandPa.rightChild
-          if parent.color == RED and grandPaRightChild.color == BLACK:
-            # перекрасить нужно дедушку и его детей
-            print('case 2 !!!')
-            newParent = self.turnLeft(parent)
-            self.validateTree(newParent) # запускаем валидацию от родителя
+      # if parent.color == RED and parent.parent and node.parent.parent:
+      #   print(' %d parent => %d => grandPa => %d ' % (node.data, node.parent.data, node.parent.parent.data))
+      #   grandPa = parent.parent
+      #   if grandPa.color == BLACK:
+      #     print('in grandPa')
+      #     grandPaRightChild = grandPa.rightChild
+      #     if parent.color == RED and grandPaRightChild.color == BLACK:
+      #       # повернуть налево отца и вернуть его обратно
+      #       print('case 2 !!! %d' % parent.data)
+      #       if parent.leftChild.data == node.data:
+      #         print('rotateLeft')
+      #         grandPa.leftChild = self.rotateLeft(parent)
+      #         return self.validateTree(grandPa.leftChild) # запускаем валидацию от родителя
+      #       if parent.rightChild.data == node.data:
+      #         print('rotateRight')
+      #         grandPa.leftChild = self.rotateRight(parent)
+      #         return self.validateTree(grandPa.leftChild) # запускаем валидацию от родителя
 
 
     return node
 
-  def turnLeft(self, node):
+  def rotateLeft(self, node):
     tempRight = node.rightChild
     tempRightLeft = tempRight.leftChild
 
-    node.rightChild = tempRightLeft
     tempRight.leftChild = node
+    node.rightChild = tempRightLeft
+
+    # переприсваиваем родителей
+    tempRight.parent = node.parent
+    node.parent = tempRight
+    if node.rightChild and node.rightChild.parent:
+      node.rightChild.parent = node
 
     return tempRight
 
-  def turnRight(self, node):
+  def rotateRight(self, node):
     tempLeft = node.leftChild
     tempLeftRight = tempLeft.rightChild
 
-    node.leftChild = tempLeftRight
     tempLeft.rightChild = node
+    node.leftChild = tempLeftRight
+
+    # переприсваиваем родителей
+    tempLeft.parent = node.parent
+    node.parent = tempLeft
+
+    if node.leftChild and node.leftChild.parent:
+      node.leftChild.parent = node
 
     return tempLeft
 
   def traverse(self):
     if self.root:
-      return self.traverseInOrder(self.root)
+      return self.traverseInOrder(self.root, [])
     return []
   ###
-  def traverseInOrder(self, node, array = []):
+  def traverseInOrder(self, node, array):
     if node.leftChild:
       array = self.traverseInOrder(node.leftChild, array)
 
-    print(' => %d %s' % (node.data, node.color))
-    array.append([node.data, node.color]) # для проверки
+    parentData = None
+    if node.parent:
+      parentData = node.parent.data
+    print(' => %d|%s /up %s' % (node.data, node.color, parentData))
+    array.append([node.data, node.color, parentData]) # для проверки
 
     if node.rightChild:
       array = self.traverseInOrder(node.rightChild, array)
