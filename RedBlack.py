@@ -29,12 +29,14 @@ class RedBlackTree(object):
     self.root = None
 
   def insert(self, data, color = RED):
-    self.root = self.insertNode(data, self.root, None, color)
+    self.root = self.insertNode(data, self.root, None, color, True)
 
-  def insertNode(self, data, node, parent, color):
+  def insertWithoutValidation(self, data, color = RED):
+    self.root = self.insertNode(data, self.root, None, color, False)
+
+  def insertNode(self, data, node, parent, color, validate):
     if not node: # если подДерево пустое, то Вернем новую ноду
       # print(' * new node %d %s' % (data, color))
-      print('')
       if parent:
         return Node(data, parent, color)
       else:
@@ -42,19 +44,23 @@ class RedBlackTree(object):
 
     if node.data < data: # идем в правое подДерево
       # print(' >>> ')
-      node.rightChild = self.insertNode(data, node.rightChild, node, color)
+      node.rightChild = self.insertNode(data, node.rightChild, node, color, validate)
 
-      self.validateTree(node.rightChild)
+      if validate:
+        self.validateTree(node.rightChild)
       return node
 
     elif node.data > data: # идем в левое подДерево
       # print(' <<< ')
-      node.leftChild = self.insertNode(data, node.leftChild, node, color)
-      self.validateTree(node.leftChild)
+      node.leftChild = self.insertNode(data, node.leftChild, node, color, validate)
+      if validate:
+        self.validateTree(node.leftChild)
       return node
 
     # прошли вставку ноды и теперь нужно провалидировать подДерево на правила
-    return self.validateTree(node)
+    if validate:
+      return self.validateTree(node)
+    return node
 
   # проверка дерева на соответствие правилам
   def validateTree(self, node):
@@ -66,27 +72,30 @@ class RedBlackTree(object):
       #   R     R
       #    \
       #     xR
-      # recolor grendPa and his childs =>
+      # recolor grandPa and his children =>
       #     xR
       #    /   \
       #   B     B
       #    \
       #     R
       parent = node.parent
-      if parent.color == RED and parent.parent and node.parent.parent:
+      if (
+        parent.color == RED
+        and parent.parent and node.parent.parent
+        and node.parent.parent.color == BLACK
+        and node.parent.parent.leftChild and node.parent.parent.leftChild.color == RED
+        and node.parent.parent.rightChild and node.parent.parent.rightChild.color == RED
+      ):
+        print('case 1 !!!')
         print(' %d parent => %d => grandPa => %d ' % (node.data, node.parent.data, node.parent.parent.data))
         grandPa = parent.parent
-        if grandPa.color == BLACK:
-          print('in grandPa')
-          grandPaLeftChild = grandPa.leftChild
-          grandPaRightChild = grandPa.rightChild
-          if grandPaLeftChild.color == RED and grandPaRightChild.color == RED:
-            # перекрасить нужно дедушку и его детей
-            print('case 1 !!!')
-            grandPa.changeColor()
-            grandPaLeftChild.changeColor()
-            grandPaRightChild.changeColor()
-            return self.validateTree(grandPa) # запускаем валидацию от дедушки
+
+        # перекрасить нужно дедушку и его детей
+        grandPa.changeColor()
+        grandPa.leftChild.changeColor()
+        grandPa.rightChild.changeColor()
+
+        return self.validateTree(grandPa) # запускаем валидацию от дедушки
 
     # case 2
     if node.color == RED and node.parent:
@@ -98,41 +107,47 @@ class RedBlackTree(object):
       # rotateLeft 3R =>
       #        5B
       #       /   \
-      #      x4R   6B
+      #      4R   6B
       #     /
-      #    3R
+      #    x3R
       parent = node.parent
-      # if parent.color == RED and parent.parent and node.parent.parent:
-      #   print(' %d parent => %d => grandPa => %d ' % (node.data, node.parent.data, node.parent.parent.data))
-      #   grandPa = parent.parent
-      #   if grandPa.color == BLACK:
-      #     print('in grandPa')
-      #     grandPaRightChild = grandPa.rightChild
-      #     if parent.color == RED and grandPaRightChild.color == BLACK:
-      #       # повернуть налево отца и вернуть его обратно
-      #       print('case 2 !!! %d' % parent.data)
-      #       if parent.leftChild.data == node.data:
-      #         print('rotateLeft')
-      #         grandPa.leftChild = self.rotateLeft(parent)
-      #         return self.validateTree(grandPa.leftChild) # запускаем валидацию от родителя
-      #       if parent.rightChild.data == node.data:
-      #         print('rotateRight')
-      #         grandPa.leftChild = self.rotateRight(parent)
-      #         return self.validateTree(grandPa.leftChild) # запускаем валидацию от родителя
+
+      # вот тут проверяем для левого поддерева!
+      # TODO: сделать для grandPa.leftChild
+      if (
+        parent.color == RED
+        and parent.rightChild and parent.rightChild == node # node in parent.right
+        and parent.parent and parent.parent.color == BLACK # grandPa
+        and parent.parent.rightChild and parent.parent.rightChild.color == BLACK # rightChild GrandPa
+        and parent.parent.leftChild == parent # leftChild GrandPa
+      ):
+        print('CASE 2 / left subTree / in grandPa')
+        print(' %d parent => %d => grandPa => %d ' % (node.data, parent.data, parent.parent.data))
+        grandPa = parent.parent
+
+        # повернуть налево отца и вернуть его обратно
+        print('rotateLeft')
+        grandPa.leftChild = self.rotateLeft(node.parent)
+
+        print('grandPa.leftChild.leftChild %d' % grandPa.leftChild.leftChild.data)
+
+        return self.validateTree(grandPa.leftChild.leftChild) # запускаем валидацию от ребенка
 
 
     return node
 
   def rotateLeft(self, node):
     tempRight = node.rightChild
+    print('tempRight %s' % tempRight.data)
     tempRightLeft = tempRight.leftChild
+    print('tempRightLeft %s' % tempRightLeft)
 
     tempRight.leftChild = node
     node.rightChild = tempRightLeft
 
     # переприсваиваем родителей
     tempRight.parent = node.parent
-    node.parent = tempRight
+    tempRight.leftChild.parent = tempRight
     if node.rightChild and node.rightChild.parent:
       node.rightChild.parent = node
 
@@ -166,7 +181,7 @@ class RedBlackTree(object):
     parentData = None
     if node.parent:
       parentData = node.parent.data
-    print(' => %d|%s /up %s' % (node.data, node.color, parentData))
+    # print(' => %d|%s /up %s' % (node.data, node.color, parentData))
     array.append([node.data, node.color, parentData]) # для проверки
 
     if node.rightChild:
