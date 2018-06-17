@@ -104,11 +104,11 @@ class TestRedBlackTree(unittest.TestCase):
     #    \
     #     4R
     rb = RedBlackTree()
-    rb.insertWithoutValidation(5)
-    rb.insertWithoutValidation(3)
+    rb.insertWithoutValidation(5, 'black')
+    rb.insertWithoutValidation(3, 'red')
     rb.insertWithoutValidation(6, 'black')
-    rb.insert(4)
-    print(rb.traverse())
+    rb.insert(4, 'red')
+    rb.traverse()
     case1 = [[3, 'red', 4], [4, 'red', 5], [5, 'black', None], [6, 'black', 5]]
     self.assertEqual(rb.traverse(), case1)
 

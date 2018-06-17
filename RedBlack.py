@@ -126,8 +126,8 @@ class RedBlackTree(object):
         grandPa = parent.parent
 
         # повернуть налево отца и вернуть его обратно
-        print('rotateLeft')
-        grandPa.leftChild = self.rotateLeft(node.parent)
+        print('rotateLeft', node.parent.data)
+        self.rotateLeft(node.parent)
 
         print('grandPa.leftChild.leftChild %d' % grandPa.leftChild.leftChild.data)
 
@@ -137,6 +137,8 @@ class RedBlackTree(object):
     return node
 
   def rotateLeft(self, node):
+    parent = node.parent
+
     tempRight = node.rightChild
     print('tempRight %s' % tempRight.data)
     tempRightLeft = tempRight.leftChild
@@ -150,6 +152,16 @@ class RedBlackTree(object):
     tempRight.leftChild.parent = tempRight
     if node.rightChild and node.rightChild.parent:
       node.rightChild.parent = node
+
+    print('parent', parent)
+    if parent and parent.leftChild and parent.leftChild.data == node.data:
+      print('parent.leftChild')
+      parent.leftChild = tempRight
+      print(parent.leftChild.data, parent.leftChild.parent.data)
+      print(parent.leftChild.leftChild.data, parent.leftChild.leftChild.parent.data)
+    else:
+      print('parent.rightChild')
+      parent.rightChild = tempRight
 
     return tempRight
 
@@ -181,7 +193,7 @@ class RedBlackTree(object):
     parentData = None
     if node.parent:
       parentData = node.parent.data
-    # print(' => %d|%s /up %s' % (node.data, node.color, parentData))
+    print(' => %d|%s /up %s' % (node.data, node.color, parentData))
     array.append([node.data, node.color, parentData]) # для проверки
 
     if node.rightChild:
